@@ -1,11 +1,30 @@
 {
   "version": 3,
   "targets": {
-    "net9.0": {}
+    "net9.0": {
+      "CLI.Core/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "compile": {
+          "bin/placeholder/CLI.Core.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/CLI.Core.dll": {}
+        }
+      }
+    }
   },
-  "libraries": {},
+  "libraries": {
+    "CLI.Core/1.0.0": {
+      "type": "project",
+      "path": "../CLI.Core/CLI.Core.csproj",
+      "msbuildProject": "../CLI.Core/CLI.Core.csproj"
+    }
+  },
   "projectFileDependencyGroups": {
-    "net9.0": []
+    "net9.0": [
+      "CLI.Core >= 1.0.0"
+    ]
   },
   "packageFolders": {
     "C:\\Users\\User\\.nuget\\packages\\": {}
@@ -33,7 +52,11 @@
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "C:\\Users\\User\\Documents\\githubproj\\cliproject\\CLI.Core\\CLI.Core.csproj": {
+              "projectPath": "C:\\Users\\User\\Documents\\githubproj\\cliproject\\CLI.Core\\CLI.Core.csproj"
+            }
+          }
         }
       },
       "warningProperties": {

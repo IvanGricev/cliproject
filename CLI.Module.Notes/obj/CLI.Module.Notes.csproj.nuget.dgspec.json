@@ -4,6 +4,67 @@
     "C:\\Users\\User\\Documents\\githubproj\\cliproject\\CLI.Module.Notes\\CLI.Module.Notes.csproj": {}
   },
   "projects": {
+    "C:\\Users\\User\\Documents\\githubproj\\cliproject\\CLI.Core\\CLI.Core.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\User\\Documents\\githubproj\\cliproject\\CLI.Core\\CLI.Core.csproj",
+        "projectName": "CLI.Core",
+        "projectPath": "C:\\Users\\User\\Documents\\githubproj\\cliproject\\CLI.Core\\CLI.Core.csproj",
+        "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\User\\Documents\\githubproj\\cliproject\\CLI.Core\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\User\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
     "C:\\Users\\User\\Documents\\githubproj\\cliproject\\CLI.Module.Notes\\CLI.Module.Notes.csproj": {
       "version": "1.0.0",
       "restore": {
@@ -27,7 +88,11 @@
         "frameworks": {
           "net9.0": {
             "targetAlias": "net9.0",
-            "projectReferences": {}
+            "projectReferences": {
+              "C:\\Users\\User\\Documents\\githubproj\\cliproject\\CLI.Core\\CLI.Core.csproj": {
+                "projectPath": "C:\\Users\\User\\Documents\\githubproj\\cliproject\\CLI.Core\\CLI.Core.csproj"
+              }
+            }
           }
         },
         "warningProperties": {

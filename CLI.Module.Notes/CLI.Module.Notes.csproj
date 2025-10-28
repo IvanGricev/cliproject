@@ -1,9 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <ItemGroup>
+    <ProjectReference Include="..\CLI.Core\CLI.Core.csproj" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="mkdir &quot;$(SolutionDir)CLI.Shell\bin\$(Configuration)\$(TargetFramework)\modules&quot; 2&gt;nul || (exit 0)&#xD;&#xA;copy &quot;$(TargetDir)$(ProjectName).dll&quot; &quot;$(SolutionDir)CLI.Shell\bin\$(Configuration)\$(TargetFramework)\modules\$(ProjectName).dll&quot;" />
+  </Target>
 </Project>

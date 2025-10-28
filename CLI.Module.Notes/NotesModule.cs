@@ -117,6 +117,13 @@ namespace CLI.Module.Notes
                     }
                     break;
 
+                case "help":
+                    ShowHelp();
+                    break;
+
+                case "module_exit":
+                    break;
+
                 default:
                     Console.WriteLine("Unknown command. Type 'help' for a list of commands.");
                     break;

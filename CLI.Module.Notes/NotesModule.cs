@@ -8,7 +8,42 @@ namespace CLI.Module.Notes
         public String Name => "Notes";
         public String Description => "A module to manage personal notes.";
 
-        public List<String> _notes = new List<String>();
+        private readonly string _notesFilePath;
+        private List<string> _notes;
+
+        public NotesModule()
+        {
+            string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string appFolder = Path.Combine(appDataPath, "cliroject");
+            Directory.CreateDirectory(appFolder);
+            _notesFilePath = Path.Combine(appFolder, "notes.json");
+            LoadNotes();
+        }
+        private void LoadNotes()
+        {
+            if (File.Exists(_notesFilePath))
+            {
+                var json = File.ReadAllText(_notesFilePath);
+                _notes = System.Text.Json.JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
+            }
+            else
+            {
+                _notes = new List<string>();
+            }
+        }
+
+        private void SaveNotes()
+        {
+            try
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(_notes);
+                File.WriteAllText(_notesFilePath, json);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving notes: {ex.Message}");
+            }
+        }
 
         public void ShowHelp()
         {
@@ -36,6 +71,7 @@ namespace CLI.Module.Notes
                     else
                     {
                         _notes.Add(parts[1]);
+                        SaveNotes();
                         Console.WriteLine("Note added.");
                     }
                     break;
@@ -62,6 +98,7 @@ namespace CLI.Module.Notes
                     else
                     {
                         _notes.RemoveAt(deleteIndex);
+                        SaveNotes();
                         Console.WriteLine("Note deleted.");
                     }
                     break;
@@ -75,6 +112,7 @@ namespace CLI.Module.Notes
                     else
                     {
                         _notes[editIndex] = editParts[1];
+                        SaveNotes();
                         Console.WriteLine("Note edited.");
                     }
                     break;

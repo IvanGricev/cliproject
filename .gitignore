@@ -13,3 +13,5 @@ CLI.Module.Notes/obj/Debug/net9.0/CLI.Module.Notes.AssemblyInfo.cs
 CLI.Module.Notes/obj/Debug/net9.0/CLI.Module.Notes.AssemblyInfoInputs.cache
 CLI.Shell/obj/Debug/net9.0/CLI.Shell.AssemblyInfo.cs
 CLI.Shell/obj/Debug/net9.0/CLI.Shell.AssemblyInfoInputs.cache
+[Bb]in/
+[Oo]bj/

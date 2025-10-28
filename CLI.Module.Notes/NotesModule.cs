@@ -117,7 +117,7 @@ namespace CLI.Module.Notes
                     }
                     break;
 
-                case "help":
+                case "module_help":
                     ShowHelp();
                     break;
 

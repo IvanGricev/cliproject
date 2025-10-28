@@ -1,4 +1,5 @@
-﻿using CLI.Core;
+﻿using System.ComponentModel.Design;
+using CLI.Core;
 using CLI.Shell;
 
 var loader = new ModuleLoader();
@@ -25,13 +26,17 @@ while (true)
     if (currentModule == null)
     {
         // --- We are in the MAIN SHELL ---
-        if (input == "help")
+        if (input == "help" && currentModule == null)
         {
             Console.WriteLine("--- Main Help ---");
             Console.WriteLine("help                - Shows this help");
             Console.WriteLine("modules             - Lists all available modules");
             Console.WriteLine("enter_module <name> - Enters a specific module");
             Console.WriteLine("exit                - Exits the CLI");
+        }
+        else if (input == "help" && currentModule != null)
+        {
+            currentModule.ShowHelp();
         }
         else if (input == "modules")
         {
@@ -53,7 +58,7 @@ while (true)
             if (moduleToEnter != null)
             {
                 currentModule = moduleToEnter;
-                Console.WriteLine($"Entering module: {currentModule.Name}. Type 'exit' to return.");
+                Console.WriteLine($"Entering module: {currentModule.Name}. Type 'module_exit' to return.");
                 currentModule.ShowHelp(); // Show module-specific help
             }
             else

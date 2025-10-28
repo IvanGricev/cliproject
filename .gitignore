@@ -1,17 +1,2 @@
-/CLI.Shell/obj/Debug
-/CLI.Shell/obj/Debug/net9.0
-/CLI.Shell/bin/Debug
-/CLI.Core/bin/Debug
-/CLI.Core/obj/Debug/net9.0
-/CLI.Core/obj/Debug
-/CLI.Module.Notes/bin/Debug/net9.0
-/CLI.Module.Notes/obj/Debug/net9.0
-/CLI.Module.Notes/obj/Debug
-CLI.Core/obj/Debug/net9.0/CLI.Core.AssemblyInfo.cs
-CLI.Core/obj/Debug/net9.0/CLI.Core.AssemblyInfoInputs.cache
-CLI.Module.Notes/obj/Debug/net9.0/CLI.Module.Notes.AssemblyInfo.cs
-CLI.Module.Notes/obj/Debug/net9.0/CLI.Module.Notes.AssemblyInfoInputs.cache
-CLI.Shell/obj/Debug/net9.0/CLI.Shell.AssemblyInfo.cs
-CLI.Shell/obj/Debug/net9.0/CLI.Shell.AssemblyInfoInputs.cache
 [Bb]in/
 [Oo]bj/

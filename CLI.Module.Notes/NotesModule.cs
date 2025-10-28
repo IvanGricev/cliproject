@@ -1,33 +1,102 @@
 ﻿using CLI.Core;
+using CLI.Module.Notes.Commands;
+using Microsoft.Extensions.DependencyInjection;
+using Spectre.Console.Cli;
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
 
 namespace CLI.Module.Notes
 {
-    public class NotesModule : CLI.Core.ICommandModule
+    public class NotesModule : ICommandModule
     {
-        public String Name => "Notes";
-        public String Description => "A module to manage personal notes.";
+        public string Name => "Notes";
+        public string Description => "A module to manage personal notes.";
 
         private readonly string _notesFilePath;
-        private List<string> _notes;
+        private List<string> _notes; 
+
+        private readonly CommandApp _app;
 
         public NotesModule()
         {
             string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string appFolder = Path.Combine(appDataPath, "cliroject");
+            string appFolder = Path.Combine(appDataPath, "CLIShell");
             Directory.CreateDirectory(appFolder);
             _notesFilePath = Path.Combine(appFolder, "notes.json");
+            
             LoadNotes();
+
+            var services = new ServiceCollection();
+            services.AddSingleton(_notes);
+            var registrar = new DependencyInjectionRegistrar(services);
+
+            _app = new CommandApp(registrar);
+            _app.Configure(config =>
+            {
+                config.AddCommand<AddNoteCommand>("add")
+                    .WithDescription("Adds a new note.");
+                config.AddCommand<ListNotesCommand>("list")
+                    .WithDescription("Lists all notes.");
+                config.AddCommand<DeleteNoteCommand>("delete")
+                    .WithDescription("Deletes a note by index.");
+                config.AddCommand<EditNoteCommand>("edit")
+                    .WithDescription("Edits a note by index.");
+
+                config.SetApplicationName("");
+                config.ValidateExamples();
+            });
         }
+
+        public void ShowHelp()
+        {
+            _app.Run(new[] { "--help" });
+        }
+
+        public void ProcessCommand(string input)
+        {
+            var args = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (args.Length == 0) return;
+
+            try
+            {
+                int result = _app.Run(args);
+
+                if (result == 0)
+                {
+                    string command = args[0].ToLower();
+                    if (command != "list" && command != "--help" && command != "-h")
+                    {
+                        SaveNotes();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Error: {ex.Message}");
+                Console.ResetColor();
+            }
+        }
+        
         private void LoadNotes()
         {
-            if (File.Exists(_notesFilePath))
+            try
             {
-                var json = File.ReadAllText(_notesFilePath);
-                _notes = System.Text.Json.JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
+                if (File.Exists(_notesFilePath))
+                {
+                    string json = File.ReadAllText(_notesFilePath);
+                    _notes = JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
+                }
+                else
+                {
+                    _notes = new List<string>();
+                }
             }
-            else
+            catch (Exception ex)
             {
+                Console.WriteLine($"Error loading notes: {ex.Message}");
                 _notes = new List<string>();
             }
         }
@@ -36,7 +105,7 @@ namespace CLI.Module.Notes
         {
             try
             {
-                var json = System.Text.Json.JsonSerializer.Serialize(_notes);
+                string json = JsonSerializer.Serialize(_notes, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(_notesFilePath, json);
             }
             catch (Exception ex)
@@ -44,91 +113,5 @@ namespace CLI.Module.Notes
                 Console.WriteLine($"Error saving notes: {ex.Message}");
             }
         }
-
-        public void ShowHelp()
-        {
-            Console.WriteLine("Notes Module Commands:");
-            Console.WriteLine(" add <note>                  - Add a new note");
-            Console.WriteLine(" list                        - List all notes");
-            Console.WriteLine(" delete <index>              - Delete a note by its index");
-            Console.WriteLine(" edit <noteId> <new content> - Edit a note by its index");
-            Console.WriteLine(" module_exit                 - Exit the Notes module");
-            Console.WriteLine(" exit                        - Exit the CLI application");
-        }
-
-        public void ProcessCommand(String input)
-        {
-            var parts = input.Split(' ', 2);
-            var command = parts[0].ToLower();
-
-            switch (command)
-            {
-                case "add":
-                    if (parts.Length < 2)
-                    {
-                        Console.WriteLine("Please provide a note to add.");
-                    }
-                    else
-                    {
-                        _notes.Add(parts[1]);
-                        SaveNotes();
-                        Console.WriteLine("Note added.");
-                    }
-                    break;
-
-                case "list":
-                    if (_notes.Count == 0)
-                    {
-                        Console.WriteLine("No notes available.");
-                    }
-                    else
-                    {
-                        for (int i = 0; i < _notes.Count; i++)
-                        {
-                            Console.WriteLine($"{i}: {_notes[i]}");
-                        }
-                    }
-                    break;
-
-                case "delete":
-                    if (parts.Length < 2 || !int.TryParse(parts[1], out int deleteIndex) || deleteIndex < 0 || deleteIndex >= _notes.Count)
-                    {
-                        Console.WriteLine("Please provide a valid note index to delete.");
-                    }
-                    else
-                    {
-                        _notes.RemoveAt(deleteIndex);
-                        SaveNotes();
-                        Console.WriteLine("Note deleted.");
-                    }
-                    break;
-
-                case "edit":
-                    var editParts = parts.Length > 1 ? parts[1].Split(' ', 2) : new string[0];
-                    if (editParts.Length < 2 || !int.TryParse(editParts[0], out int editIndex) || editIndex < 0 || editIndex >= _notes.Count)
-                    {
-                        Console.WriteLine("Please provide a valid note index and new content to edit.");
-                    }
-                    else
-                    {
-                        _notes[editIndex] = editParts[1];
-                        SaveNotes();
-                        Console.WriteLine("Note edited.");
-                    }
-                    break;
-
-                case "help":
-                    break;
-                    
-                case "module_exit":
-                    break;
-
-                default:
-                    Console.WriteLine("Unknown command. Type 'help' for a list of commands.");
-                    break;
-            }
-        }
     }
-
 }
-

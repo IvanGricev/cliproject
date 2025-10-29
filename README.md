@@ -12,25 +12,7 @@ Project Structure
 
 Getting Started
 
-Prerequisites
-
-1. Restore Dependencies
-
-2. Build the Solution
-
-3. Run the Shell
-
 How to Create a New Module
-
-Step 1: Create the Project
-
-Step 2: Add the Core Reference
-
-Step 3: Implement the Interface
-
-Step 4: Set up the Post-Build Event
-
-Step 5: Build & Run
 
 Module Design Rules
 
@@ -46,19 +28,25 @@ Robust Command Parsing: Modules use the Spectre.Console.Cli library to define an
 
 Data Persistence: Modules are responsible for their own data persistence (e.g., the Notes module saves its notes to a JSON file).
 
+Shared DI Registrar: The CLI.Core project provides a shared SpectreTypeRegistrar to simplify module creation.
+
 Project Structure
 
 The solution is divided into several key projects:
 
 CLISolution.sln: The main Visual Studio Solution that contains all projects.
 
-CLI.Core/: A Class Library. This is the most important project. It contains the ICommandModule interface, which is the "contract" that all modules must implement. Both the Shell and all Modules reference this project.
+CLI.Core/: A Class Library. This is the most important project. It contains:
+
+ICommandModule.cs: The "contract" interface that all modules must implement.
+
+SpectreTypeRegistrar.cs: The shared Dependency Injection registrar for Spectre.Console.Cli.
 
 CLI.Shell/: The main Console App. This is the executable. It contains:
 
 The REPL (Program.cs).
 
-The ModuleLoader class (using Reflection).
+The ModuleLoader.cs (which uses Reflection).
 
 The main "shell" commands (help, modules, enter_module, exit).
 
@@ -115,25 +103,30 @@ dotnet new classlib -n CLI.Module.MyNewModule
 dotnet sln add CLI.Module.MyNewModule/CLI.Module.MyNewModule.csproj
 
 
-Step 2: Add the Core Reference
+Step 2: Add Required References & Packages
 
-Your new module must reference CLI.Core to get the ICommandModule interface.
+Your new module needs to reference CLI.Core and also needs the Spectre libraries.
 
+# 1. Add the Core Reference (gets ICommandModule and SpectreTypeRegistrar)
 dotnet add CLI.Module.MyNewModule/CLI.Module.MyNewModule.csproj reference CLI.Core/CLI.Core.csproj
+
+# 2. Add the Spectre packages
+dotnet add CLI.Module.MyNewModule/CLI.Module.MyNewModule.csproj package Spectre.Console.Cli
+dotnet add CLI.Module.MyNewModule/CLI.Module.MyNewModule.csproj package Spectre.Console.Cli.Extensions.DependencyInjection
 
 
 Step 3: Implement the ICommandModule Interface
 
 Rename Class1.cs in your new project to MyNewModule.cs and implement the interface.
 
-We strongly recommend using Spectre.Console.Cli to manage your module's internal commands, just as the Notes module does.
-
 Here is a simple template to get you started:
 
-using CLI.Core;
+using CLI.Core; // <-- For ICommandModule and SpectreTypeRegistrar
 using Spectre.Console.Cli;
 using Microsoft.Extensions.DependencyInjection;
-using System.Threading; // Added for CancellationToken
+using System.Threading; // <-- For CancellationToken
+using System;
+using System.ComponentModel; // <-- For [Description]
 
 namespace CLI.Module.MyNewModule
 {
@@ -150,16 +143,20 @@ namespace CLI.Module.MyNewModule
             var services = new ServiceCollection();
             // services.AddSingleton(new MyModuleState()); // Example
 
-            // 2. Create your command app
-            _app = new CommandApp(new TypeRegistrar(services));
+            // 2. Use the SHARED registrar from CLI.Core
+            var registrar = new SpectreTypeRegistrar(services);
+
+            // 3. Create your command app
+            _app = new CommandApp(registrar);
             
-            // 3. Configure your commands
+            // 4. Configure your commands
             _app.Configure(config =>
             {
                 config.AddCommand<MyCommand>("my-command")
                     .WithDescription("Does a cool thing.");
                 
                 // Add more commands here
+                config.SetApplicationName(""); // Hides the app name in help
             });
         }
 
@@ -190,6 +187,7 @@ namespace CLI.Module.MyNewModule
     public class MyCommandSettings : CommandSettings
     {
         [CommandArgument(0, "[NAME]")]
+        [Description("An optional name to greet.")]
         public string Name { get; set; }
     }
 
@@ -203,12 +201,6 @@ namespace CLI.Module.MyNewModule
         }
     }
 }
-
-
-For this to work, you must also add the Spectre.Console.Cli packages to your new project:
-
-dotnet add CLI.Module.MyNewModule/CLI.Module.MyNewModule.csproj package Spectre.Console.Cli
-dotnet add CLI.Module.MyNewModule/CLI.Module.MyNewModule.csproj package Spectre.Console.Cli.Extensions.DependencyInjection
 
 
 Step 4: Set up the Post-Build Event

@@ -1,11 +1,12 @@
 ﻿using CLI.Core;
 using CLI.Module.Notes.Commands;
-using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console.Cli;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace CLI.Module.Notes
 {
@@ -17,7 +18,7 @@ namespace CLI.Module.Notes
         private readonly string _notesFilePath;
         private List<string> _notes; 
 
-        private readonly CommandApp _app;
+        private readonly ICommandApp _app;
 
         public NotesModule()
         {
@@ -30,9 +31,11 @@ namespace CLI.Module.Notes
 
             var services = new ServiceCollection();
             services.AddSingleton(_notes);
-            var registrar = new DependencyInjectionRegistrar(services);
+            
+            var registrar = new SpectreTypeRegistrar(services);
 
             _app = new CommandApp(registrar);
+
             _app.Configure(config =>
             {
                 config.AddCommand<AddNoteCommand>("add")
@@ -44,7 +47,7 @@ namespace CLI.Module.Notes
                 config.AddCommand<EditNoteCommand>("edit")
                     .WithDescription("Edits a note by index.");
 
-                config.SetApplicationName("");
+                config.SetApplicationName(""); 
                 config.ValidateExamples();
             });
         }
@@ -66,7 +69,7 @@ namespace CLI.Module.Notes
                 if (result == 0)
                 {
                     string command = args[0].ToLower();
-                    if (command != "list" && command != "--help" && command != "-h")
+                    if (command == "add" || command == "delete" || command == "edit")
                     {
                         SaveNotes();
                     }
@@ -75,6 +78,7 @@ namespace CLI.Module.Notes
             catch (Exception ex)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
+                // AnsiConsole.MarkupLine("[red]Error:[/] " + ex.Message);
                 Console.WriteLine($"Error: {ex.Message}");
                 Console.ResetColor();
             }
@@ -115,3 +119,4 @@ namespace CLI.Module.Notes
         }
     }
 }
+

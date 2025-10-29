@@ -2,20 +2,21 @@ using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console.Cli;
 using System;
 
-namespace CLI.Module.Notes
+namespace CLI.Core
 {
-    public sealed class DependencyInjectionRegistrar : ITypeRegistrar
+    public sealed class SpectreTypeRegistrar : ITypeRegistrar
     {
         private readonly IServiceCollection _services;
 
-        public DependencyInjectionRegistrar(IServiceCollection services)
+        public SpectreTypeRegistrar(IServiceCollection services)
         {
             _services = services;
         }
 
         public ITypeResolver Build()
         {
-            return new DependencyInjectionResolver(_services.BuildServiceProvider());
+            var provider = _services.BuildServiceProvider();
+            return new SpectreTypeResolver(provider);
         }
 
         public void Register(Type service, Type implementation)
@@ -34,18 +35,19 @@ namespace CLI.Module.Notes
         }
     }
 
-    public sealed class DependencyInjectionResolver : ITypeResolver, IDisposable
+    public sealed class SpectreTypeResolver : ITypeResolver, IDisposable
     {
         private readonly IServiceProvider _provider;
 
-        public DependencyInjectionResolver(IServiceProvider provider)
+        public SpectreTypeResolver(IServiceProvider provider)
         {
             _provider = provider;
         }
 
-        public object? Resolve(Type? type)
+        public object Resolve(Type type)
         {
-            return type == null ? null : _provider.GetService(type);
+
+            return _provider.GetService(type);
         }
 
         public void Dispose()
@@ -57,3 +59,4 @@ namespace CLI.Module.Notes
         }
     }
 }
+

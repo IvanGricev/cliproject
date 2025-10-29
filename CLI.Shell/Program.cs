@@ -25,18 +25,14 @@ while (true)
     // --- Command Evaluation ---
     if (currentModule == null)
     {
-        // --- We are in the MAIN SHELL ---
-        if (input == "help" && currentModule == null)
+
+        if (input == "help")
         {
             Console.WriteLine("--- Main Help ---");
-            Console.WriteLine("help                - Shows this help");
-            Console.WriteLine("modules             - Lists all available modules");
+            Console.WriteLine("help              - Shows this help");
+            Console.WriteLine("modules           - Lists all available modules");
             Console.WriteLine("enter_module <name> - Enters a specific module");
-            Console.WriteLine("exit                - Exits the CLI");
-        }
-        else if (input == "help" && currentModule != null)
-        {
-            currentModule.ShowHelp();
+            Console.WriteLine("exit              - Exits the CLI");
         }
         else if (input == "modules")
         {
@@ -83,9 +79,13 @@ while (true)
             Console.WriteLine($"Exiting {currentModule.Name} module.");
             currentModule = null; // Go back to the main shell
         }
+        
+        else if (input == "help")
+        {
+            currentModule.ShowHelp();
+        }
         else
         {
-            // Pass the command to the active module to handle
             currentModule.ProcessCommand(input);
         }
     }

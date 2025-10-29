@@ -4,19 +4,19 @@ A modular, plugin-based console application written in C#. This project acts as 
 
 The project is built on .NET and follows clean architecture principles to decouple the core shell from its modules.
 
-** Table of Contents
+Table of Contents
 
-** Features
+Features
 
-** Project Structure
+Project Structure
 
-** Getting Started
+Getting Started
 
-** How to Create a New Module
+How to Create a New Module
 
-** Module Design Rules
+Module Design Rules
 
-** Features
+Features
 
 Plugin Architecture: The shell loads all module .dll files from a /modules folder at startup using Reflection.
 
@@ -30,7 +30,7 @@ Centralized Data Storage: A JsonDataService in CLI.Core provides easy-to-use met
 
 Shared DI Registrar: CLI.Core provides a common SpectreTypeRegistrar to simplify setting up Dependency Injection for commands.
 
-** Project Structure
+Project Structure
 
 The solution is divided into several key projects:
 
@@ -55,7 +55,7 @@ CLI.Shell: The main Console App. This is the executable REPL and module host.
 
 CLI.Module.Notes: A Class Library. This is an example module that demonstrates data persistence and command parsing.
 
-** Getting Started
+Getting Started
 
 Follow these steps to build and run the application.
 
@@ -74,7 +74,7 @@ dotnet restore
 
 2. Build the Solution
 
-Warning
+[!WARNING]
 This step is critical. Building the solution will not only compile the code but also run the Post-Build Events that copy the module .dll files into the correct modules folder for the shell to find.
 
 dotnet build
@@ -89,7 +89,7 @@ dotnet run --project CLI.Shell/CLI.Shell.csproj
 
 If everything is set up correctly, you will see a "Loaded module: Notes" message, and you'll be at the main > prompt.
 
-** How to Create a New Module
+How to Create a New Module
 
 This guide will walk you through creating a new module named CLI.Module.MyNewModule.
 
@@ -164,7 +164,7 @@ namespace CLI.Module.MyNewModule
             _app.Configure(config =>
             {
                 config.AddCommand<MyCommand>("my-command")
-                    .WithDescription("Does a cool thing.");
+                      .WithDescription("Does a cool thing.");
                 
                 // Add more commands here
             });
@@ -256,7 +256,7 @@ Welcome to CLI. Type 'help' for commands.
 >
 
 
-** Module Design Rules
+Module Design Rules
 
 Modules are Self-Contained: A module should manage its own state and persistence. It should never try to directly access another module.
 

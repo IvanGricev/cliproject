@@ -1,18 +1,30 @@
 using CLI.Core;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 
 namespace CLI.Shell
 {
+    /// <summary>
+    /// Contains the result of a module load operation.
+    /// </summary>
+    public class ModuleLoadResult
+    {
+        public List<ICommandModule> LoadedModules { get; } = new List<ICommandModule>();
+        public List<(string FileName, string Error)> FailedModules { get; } = new List<(string, string)>();
+    }
+
     public class ModuleLoader
     {
-        public List<ICommandModule> LoadModules(string path)
+        public ModuleLoadResult LoadModules(string path)
         {
-            var modules = new List<ICommandModule>();
-            
+            var result = new ModuleLoadResult();
+
             if (!Directory.Exists(path))
             {
-                Console.WriteLine("Modules directory not found.");
-                return modules;
+                return result; // Return empty result, folder doesn't exist
             }
 
             var dllFiles = Directory.GetFiles(path, "*.dll");
@@ -24,24 +36,25 @@ namespace CLI.Shell
                     var assembly = Assembly.LoadFrom(file);
                     
                     var moduleTypes = assembly.GetTypes()
-                        .Where(t => typeof(ICommandModule).IsAssignableFrom(t) && !t.IsInterface);
+                        .Where(t => typeof(ICommandModule).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
 
                     foreach (var type in moduleTypes)
                     {
                         var module = (ICommandModule)Activator.CreateInstance(type);
                         if (module != null)
                         {
-                            modules.Add(module);
-                            Console.WriteLine($"Loaded module: {module.Name}");
+                            result.LoadedModules.Add(module);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Failed to load module from {file}: {ex.Message}");
+                    // Catch the error and add it to the failed list
+                    result.FailedModules.Add((Path.GetFileName(file), ex.Message));
                 }
             }
-            return modules;
+            return result;
         }
     }
 }
+

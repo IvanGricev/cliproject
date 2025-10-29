@@ -7,7 +7,8 @@ var loader = new ModuleLoader();
 
 string modulesPath = Path.Combine(AppContext.BaseDirectory, "modules");
 
-List<ICommandModule> availableModules = loader.LoadModules(modulesPath);
+ModuleLoadResult loadResult = loader.LoadModules(modulesPath);
+List<ICommandModule> availableModules = loadResult.LoadedModules;
 
 ICommandModule currentModule = null; // null means we are in the main shell
 

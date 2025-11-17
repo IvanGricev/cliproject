@@ -2,6 +2,7 @@ using Spectre.Console.Cli;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace CLI.Module.Notes.Commands
 {
@@ -12,7 +13,7 @@ namespace CLI.Module.Notes.Commands
         public int Index { get; set; }
     }
 
-    public class DeleteNoteCommand : Command<DeleteNoteSettings>
+    public class DeleteNoteCommand : AsyncCommand<DeleteNoteSettings>
     {
         private readonly List<string> _notes;
 
@@ -21,17 +22,17 @@ namespace CLI.Module.Notes.Commands
             _notes = notes;
         }
 
-        public override int Execute(CommandContext context, DeleteNoteSettings settings, CancellationToken cancellationToken)
+        public override Task<int> ExecuteAsync(CommandContext context, DeleteNoteSettings settings, CancellationToken cancellationToken)
         {
             if (settings.Index < 0 || settings.Index >= _notes.Count)
             {
                 Console.WriteLine("Please provide a valid note index.");
-                return -1; // -1 means failure
+                return Task.FromResult(-1); 
             }
 
             _notes.RemoveAt(settings.Index);
             Console.WriteLine("Note deleted.");
-            return 0;
+            return Task.FromResult(0); 
         }
     }
 }

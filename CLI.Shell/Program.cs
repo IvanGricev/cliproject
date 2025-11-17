@@ -1,93 +1,93 @@
-﻿using System.ComponentModel.Design;
-using CLI.Core;
+﻿using CLI.Core;
 using CLI.Shell;
+using CLI.Shell.Commands;
+using Microsoft.Extensions.DependencyInjection;
+using Spectre.Console;
+using Spectre.Console.Cli;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+
+Console.Title = "CLI Shell";
 
 var loader = new ModuleLoader();
-
-
 string modulesPath = Path.Combine(AppContext.BaseDirectory, "modules");
-
 ModuleLoadResult loadResult = loader.LoadModules(modulesPath);
-List<ICommandModule> availableModules = loadResult.LoadedModules;
 
-ICommandModule currentModule = null; // null means we are in the main shell
+var shellState = new ShellState(loadResult.LoadedModules);
 
-Console.WriteLine("Welcome to CLI. Type 'help' for commands.");
+var services = new ServiceCollection();
+services.AddSingleton(shellState);
+var registrar = new SpectreTypeRegistrar(services);
+var shellApp = new CommandApp(registrar);
 
-// The REPL (Read-Evaluate-Print Loop)
-while (true)
+shellApp.Configure(config =>
 {
-    string prompt = (currentModule == null) ? "> " : $"{currentModule.Name}> ";
-    Console.Write(prompt);
+    config.AddCommand<ShellHelpCommand>("help").WithDescription("Shows this help");
+    config.AddCommand<ModulesCommand>("modules").WithDescription("Lists all available modules");
+    config.AddCommand<EnterModuleCommand>("enter_module").WithDescription("Enters a specific module");
+    config.AddCommand<ExitCommand>("exit").WithDescription("Exits the CLI");
+    
+    config.SetApplicationName("");
+    config.ValidateExamples();
+});
+
+AnsiConsole.MarkupLine("[bold blue]Welcome to CLI.[/] Type 'help' for commands.");
+AnsiConsole.MarkupLine($"[green]Successfully loaded {loadResult.LoadedModules.Count} module(s).[/]");
+
+if (loadResult.FailedModules.Count > 0)
+{
+    var table = new Table().Border(TableBorder.Rounded).Expand();
+    table.AddColumn("Module File");
+    table.AddColumn("Error");
+    foreach (var failed in loadResult.FailedModules)
+    {
+        table.AddRow($"[yellow]{failed.FileName}[/]", $"[red]{failed.Error.EscapeMarkup()}[/]");
+    }
+    AnsiConsole.Write(table);
+}
+
+while (shellState.IsRunning)
+{
+    var prompt = shellState.CurrentModule == null 
+        ? new Markup("[yellow]> [/]") 
+        : new Markup($"[cyan]{shellState.CurrentModule.Name}> [/]");
+    AnsiConsole.Write(prompt);
 
     string input = Console.ReadLine();
     if (string.IsNullOrWhiteSpace(input)) continue;
 
-    // --- Command Evaluation ---
-    if (currentModule == null)
+    var inputArgs = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+    if (inputArgs.Length == 0) continue;
+
+    if (shellState.CurrentModule == null)
     {
-
-        if (input == "help")
+        try
         {
-            Console.WriteLine("--- Main Help ---");
-            Console.WriteLine("help              - Shows this help");
-            Console.WriteLine("modules           - Lists all available modules");
-            Console.WriteLine("enter_module <name> - Enters a specific module");
-            Console.WriteLine("exit              - Exits the CLI");
+            await shellApp.RunAsync(inputArgs);
         }
-        else if (input == "modules")
+        catch (Exception ex)
         {
-            Console.WriteLine("--- Available Modules ---");
-            if (availableModules.Count == 0)
-            {
-                Console.WriteLine("No modules found.");
-            }
-            foreach (var mod in availableModules)
-            {
-                Console.WriteLine($"{mod.Name} - {mod.Description}");
-            }
-        }
-        else if (input.StartsWith("enter_module "))
-        {
-            string moduleName = input.Substring(13);
-            var moduleToEnter = availableModules.FirstOrDefault(m => m.Name.Equals(moduleName, StringComparison.OrdinalIgnoreCase));
-
-            if (moduleToEnter != null)
-            {
-                currentModule = moduleToEnter;
-                Console.WriteLine($"Entering module: {currentModule.Name}. Type 'module_exit' to return.");
-                currentModule.ShowHelp(); // Show module-specific help
-            }
-            else
-            {
-                Console.WriteLine("Module not found.");
-            }
-        }
-        else if (input == "exit")
-        {
-            break; // Exit the while loop and end the program
-        }
-        else
-        {
-            Console.WriteLine("Unknown command. Type 'help'.");
+            AnsiConsole.MarkupLine($"[red]Error: {ex.Message.EscapeMarkup()}[/]");
         }
     }
     else
     {
-        // --- We are INSIDE A MODULE ---
-        if (input == "exit" || input == "module_exit")
+        if (inputArgs[0].ToLower() == "exit" || inputArgs[0].ToLower() == "module_exit")
         {
-            Console.WriteLine($"Exiting {currentModule.Name} module.");
-            currentModule = null; // Go back to the main shell
+            AnsiConsole.MarkupLine($"Exiting [cyan]{shellState.CurrentModule.Name}[/] module.");
+            shellState.CurrentModule = null; 
         }
-        
-        else if (input == "help")
+        else if (inputArgs[0].ToLower() == "help")
         {
-            currentModule.ShowHelp();
+            await shellState.CurrentModule.ShowHelpAsync();
         }
         else
         {
-            currentModule.ProcessCommand(input);
+            await shellState.CurrentModule.ProcessCommandAsync(input);
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace CLI.Core
 {
@@ -19,8 +20,8 @@ namespace CLI.Core
             string exeDir = AppContext.BaseDirectory;
 
             // 2. Find the solution root (cliproject) by searching upwards for the .sln file
-            DirectoryInfo currentDir = new DirectoryInfo(exeDir);
-            string solutionRoot = null;
+            DirectoryInfo? currentDir = new DirectoryInfo(exeDir); // Make nullable
+            string? solutionRoot = null; // Make nullable
             while (currentDir != null)
             {
                 // Check if a .sln file exists here
@@ -71,16 +72,14 @@ namespace CLI.Core
         /// <summary>
         /// Saves data to a JSON file inside the ModulesData folder.
         /// </summary>
-        /// <typeparam name="T">The type of data to save.</typeparam>
-        /// <param name="fileName">The name of the file (e.g., "notes.json").</param>
-        /// <param name="data">The data object to serialize.</param>
-        public void SaveData<T>(string fileName, T data)
+        public async Task SaveDataAsync<T>(string fileName, T data)
         {
             string filePath = GetFullFilePath(fileName);
             try
             {
-                string json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(filePath, json);
+                // Use async streams
+                using FileStream createStream = File.Create(filePath);
+                await JsonSerializer.SerializeAsync(createStream, data, new JsonSerializerOptions { WriteIndented = true });
             }
             catch (Exception ex)
             {
@@ -91,31 +90,27 @@ namespace CLI.Core
         /// <summary>
         /// Loads data from a JSON file inside the ModulesData folder.
         /// </summary>
-        /// <typeparam name="T">The type of data to load.</typeparam>
-        /// <param name="fileName">The name of the file (e.g., "notes.json").</param>
-        /// <returns>The deserialized data, or default(T) if not found or on error.</returns>
-        public T LoadData<T>(string fileName)
+        public async Task<T?> LoadDataAsync<T>(string fileName)
         {
             string filePath = GetFullFilePath(fileName);
 
             if (!File.Exists(filePath))
             {
-                // Return default (e.g., null for objects) if the file doesn't exist
-                return default(T);
+                return default; // default(T) is null for reference types
             }
 
             try
             {
-                string json = File.ReadAllText(filePath);
-                return JsonSerializer.Deserialize<T>(json);
+                // Use async streams
+                using FileStream openStream = File.OpenRead(filePath);
+                // Deserialize as nullable
+                return await JsonSerializer.DeserializeAsync<T?>(openStream);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error loading data from {filePath}: {ex.Message}");
-                // Return default on error
-                return default(T);
+                return default; // Return null on error
             }
         }
     }
 }
-

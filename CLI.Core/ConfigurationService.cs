@@ -10,26 +10,23 @@ namespace CLI.Core
     /// </summary>
     public class ConfigurationService : IConfigurationService
     {
-        private readonly JsonNode _configRoot;
+        private readonly JsonNode? _configRoot;
 
         public ConfigurationService(JsonDataService dataService)
         {
             try
             {
-                // Use the JsonDataService to find config.json
-                _configRoot = dataService.LoadData<JsonNode>("config.json");
+                _configRoot = dataService.LoadDataAsync<JsonNode>("config.json").GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
-                // Log a warning but don't crash.
-                // Modules will just get null when asking for keys.
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.WriteLine($"Warning: Could not load config.json. {ex.Message}");
                 Console.ResetColor();
             }
         }
 
-        public string GetValue(string key)
+        public string? GetValue(string key)
         {
             if (_configRoot == null)
             {
@@ -38,7 +35,7 @@ namespace CLI.Core
 
             // Handle nested keys separated by colons, e.g., "GitHub:ApiKey"
             var parts = key.Split(':');
-            JsonNode currentNode = _configRoot;
+            JsonNode? currentNode = _configRoot; // Make nullable
 
             foreach (var part in parts)
             {
@@ -57,4 +54,3 @@ namespace CLI.Core
         }
     }
 }
-

@@ -14,7 +14,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="mkdir &quot;$(SolutionDir)CLI.Shell\bin\$(Configuration)\$(TargetFramework)\modules&quot; 2&gt;nul || (exit 0)&#xD;&#xA;copy &quot;$(TargetDir)$(ProjectName).dll&quot; &quot;$(SolutionDir)CLI.Shell\bin\$(Configuration)\$(TargetFramework)\modules\$(ProjectName).dll&quot;" />
+  <Target Name="CopyPluginToShell" AfterTargets="Build">
+    <PropertyGroup>
+      <ShellModulesDir>$(SolutionDir)CLI.Shell\bin\$(Configuration)\$(TargetFramework)\modules\</ShellModulesDir>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(ShellModulesDir)" Condition="!Exists('$(ShellModulesDir)')" />
+
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ShellModulesDir)" />
   </Target>
 </Project>

@@ -44,9 +44,14 @@ namespace CLI.Core
             _provider = provider;
         }
 
-        public object Resolve(Type type)
+        // --- FIX: Add '?' to match the interface's nullability ---
+        public object? Resolve(Type? type)
+        // --- END OF FIX ---
         {
-
+            if (type == null)
+            {
+                return null;
+            }
             return _provider.GetService(type);
         }
 
@@ -59,4 +64,3 @@ namespace CLI.Core
         }
     }
 }
-

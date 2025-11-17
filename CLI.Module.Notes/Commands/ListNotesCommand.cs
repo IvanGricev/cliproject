@@ -1,10 +1,12 @@
 using Spectre.Console.Cli;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks; // <-- Added
 
 namespace CLI.Module.Notes.Commands
 {
-    public class ListNotesCommand : Command
+    // Changed to AsyncCommand
+    public class ListNotesCommand : AsyncCommand
     {
         private readonly List<string> _notes;
 
@@ -13,7 +15,8 @@ namespace CLI.Module.Notes.Commands
             _notes = notes;
         }
 
-        public override int Execute(CommandContext context, CancellationToken cancellationToken)
+        // Changed to ExecuteAsync, returns Task<int>
+        public override Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken)
         {
             if (_notes.Count == 0)
             {
@@ -26,7 +29,7 @@ namespace CLI.Module.Notes.Commands
                     Console.WriteLine($"{i}: {_notes[i]}");
                 }
             }
-            return 0;
+            return Task.FromResult(0); 
         }
     }
 }

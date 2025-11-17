@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console.Cli;
 using System;
 using System.Linq;
+using System.Threading.Tasks; // <-- 1. Added Task support
 
 namespace CLI.Core
 {
@@ -48,14 +49,15 @@ namespace CLI.Core
         /// <summary>
         /// Main entry point from the shell. Forwards input to Spectre.
         /// </summary>
-        public virtual void ProcessCommand(string input)
+        public virtual async Task ProcessCommandAsync(string input)
         {
             var args = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             if (args.Length == 0) return;
 
             try
             {
-                int result = App.Run(args);
+                // Use RunAsync
+                int result = await App.RunAsync(args);
 
                 // If a command (not help) succeeded, call the OnCommandExecuted hook
                 if (result == 0)
@@ -63,7 +65,8 @@ namespace CLI.Core
                     var command = args.First().ToLower();
                     if (command != "--help" && command != "-h")
                     {
-                        OnCommandExecuted(command, args);
+                        // Await the hook
+                        await OnCommandExecutedAsync(command, args);
                     }
                 }
             }
@@ -78,9 +81,10 @@ namespace CLI.Core
         /// <summary>
         /// Forwards "help" to Spectre.
         /// </summary>
-        public virtual void ShowHelp()
+        public virtual async Task ShowHelpAsync()
         {
-            App.Run(new[] { "--help" });
+            // Use RunAsync
+            await App.RunAsync(new[] { "--help" });
         }
 
         // --- Abstract and Virtual methods for child classes ---
@@ -103,10 +107,10 @@ namespace CLI.Core
         /// Child modules CAN override this to react to a successful command
         /// (e.g., to save data).
         /// </summary>
-        protected virtual void OnCommandExecuted(string commandName, string[] args)
+        protected virtual Task OnCommandExecutedAsync(string commandName, string[] args)
         {
-            // Does nothing by default
+            // Now returns a Task
+            return Task.CompletedTask;
         }
     }
 }
-

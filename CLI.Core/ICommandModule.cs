@@ -1,13 +1,14 @@
-﻿namespace CLI.Core;
+﻿using System.Threading.Tasks;
 
-public interface ICommandModule
+namespace CLI.Core
 {
-    String Name { get; }
-    
-    String Description { get; }
+    public interface ICommandModule
+    {
+        string Name { get; }
+        string Description { get; }
 
-    void ShowHelp();
+        Task ShowHelpAsync();
 
-    // The method called for every command the user types inside your module
-    void ProcessCommand(String input);
+        Task ProcessCommandAsync(string input);
+    }
 }

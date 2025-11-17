@@ -2,6 +2,7 @@ using Spectre.Console.Cli;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading;
+using System.Threading.Tasks; 
 
 namespace CLI.Module.Notes.Commands
 {
@@ -16,32 +17,35 @@ namespace CLI.Module.Notes.Commands
         public string[] NewContent { get; set; }
     }
 
-    public class EditNoteCommand : Command<EditNoteSettings>
+    // Changed to AsyncCommand
+    public class EditNoteCommand : AsyncCommand<EditNoteSettings>
     {
         private readonly List<string> _notes;
 
+        // This is the constructor, make sure it has parentheses ()
         public EditNoteCommand(List<string> notes)
         {
             _notes = notes;
         }
 
-        public override int Execute(CommandContext context, EditNoteSettings settings, CancellationToken cancellationToken)
+        // Changed to ExecuteAsync, returns Task<int>
+        public override Task<int> ExecuteAsync(CommandContext context, EditNoteSettings settings, CancellationToken cancellationToken)
         {
             if (settings.Index < 0 || settings.Index >= _notes.Count)
             {
                 Console.WriteLine("Please provide a valid note index.");
-                return -1; // -1 means failure
+                return Task.FromResult(-1);
             }
             if (settings.NewContent == null || settings.NewContent.Length == 0)
             {
                 Console.WriteLine("Please provide new content for the note.");
-                return -1; // -1 means failure
+                return Task.FromResult(-1);
             }
 
             string fullContent = string.Join(" ", settings.NewContent);
             _notes[settings.Index] = fullContent;
             Console.WriteLine("Note edited.");
-            return 0;
+            return Task.FromResult(0);
         }
     }
 }

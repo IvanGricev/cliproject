@@ -2,6 +2,7 @@ using Spectre.Console.Cli;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace CLI.Module.Notes.Commands
 {
@@ -12,7 +13,7 @@ namespace CLI.Module.Notes.Commands
         public string[] NoteText { get; set; }
     }
 
-    public class AddNoteCommand : Command<AddNoteSettings>
+    public class AddNoteCommand : AsyncCommand<AddNoteSettings>
     {
         private readonly List<string> _notes;
 
@@ -21,18 +22,18 @@ namespace CLI.Module.Notes.Commands
             _notes = notes;
         }
 
-        public override int Execute(CommandContext context, AddNoteSettings settings, CancellationToken cancellationToken)
+        public override Task<int> ExecuteAsync(CommandContext context, AddNoteSettings settings, CancellationToken cancellationToken)
         {
             if (settings.NoteText == null || settings.NoteText.Length == 0)
             {
                 Console.WriteLine("Please provide a note to add.");
-                return -1; // -1 means failure
+                return Task.FromResult(-1); 
             }
 
             string fullNote = string.Join(" ", settings.NoteText);
             _notes.Add(fullNote);
             Console.WriteLine("Note added.");
-            return 0; // 0 means success
+            return Task.FromResult(0);
         }
     }
 }

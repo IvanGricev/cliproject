@@ -12,7 +12,7 @@ namespace CLI.Core
         /// </summary>
         /// <param name="key">The key (e.g., "GitHub:ApiKey").</param>
         /// <returns>The value as a string, or null if not found.</returns>
-        string GetValue(string key);
+        string? GetValue(string key);
     }
 }
 

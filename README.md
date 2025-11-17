@@ -18,17 +18,23 @@ Module Design Rules
 
 Features
 
-Plugin Architecture: The shell loads all module .dll files from a /modules folder at startup using Reflection.
+Plugin Architecture: The shell loads all module .dll files from a /modules folder at startup using Reflection and reports any load failures.
 
-REPL Interface: A standard Read-Evaluate-Print Loop for command entry.
+Asynchronous by Default: The entire application, from the shell's REPL to the module commands, is built on async/await to handle I/O without blocking.
 
-State Management: The shell manages the state, allowing the user to "enter" a module and use its specific commands.
+Rich REPL Interface: A standard Read-Evaluate-Print Loop for command entry, enhanced with a Spectre.Console UI for colors and tables.
 
-Robust Command Parsing: Modules use the Spectre.Console.Cli library to define and parse their own complex commands, arguments, and options.
+Robust Command Parsing: The shell and all modules use the Spectre.Console.Cli library to define and parse their own complex commands, arguments, and options.
 
-Centralized Data Storage: A JsonDataService in CLI.Core provides easy-to-use methods (LoadData, SaveData) for all modules to persist their data in a central ModulesData folder.
+Simplified Module Creation: A BaseModule abstract class in CLI.Core handles 90% of the boilerplate for creating new modules (DI, Spectre setup, etc.).
 
-Shared DI Registrar: CLI.Core provides a common SpectreTypeRegistrar to simplify setting up Dependency Injection for commands.
+Centralized Services: CLI.Core provides shared, reusable services for:
+
+JsonDataService: Easy-to-use async methods (LoadDataAsync, SaveDataAsync) for JSON persistence.
+
+IConfigurationService: Loads shared configuration (e.g., API keys) from a central config.json.
+
+SpectreTypeRegistrar: A shared DI helper for Spectre.Console.Cli.
 
 Project Structure
 
@@ -36,24 +42,33 @@ The solution is divided into several key projects:
 
 CLISolution.sln
 ├── 📁 CLI.Core/
-│   ├── ICommandModule.cs       (The "contract" for all modules)
-│   ├── SpectreTypeRegistrar.cs (Shared DI helper for Spectre)
-│   └── JsonDataService.cs      (Shared helper for JSON Load/Save)
+│   ├── ICommandModule.cs         (The async "contract" for all modules)
+│   ├── BaseModule.cs           (Abstract class to simplify module creation)
+│   ├── IConfigurationService.cs  (Interface for a shared config service)
+│   ├── ConfigurationService.cs   (Implementation for config.json)
+│   ├── SpectreTypeRegistrar.cs   (Shared DI helper for Spectre)
+│   └── JsonDataService.cs        (Shared helper for async JSON Load/Save)
 │
 ├── 📁 CLI.Shell/
-│   ├── Program.cs              (The main REPL loop)
-│   └── ModuleLoader.cs         (Finds and loads module .dlls)
+│   ├── Program.cs                (The main async REPL loop)
+│   ├── ModuleLoader.cs           (Finds and loads module .dlls from memory)
+│   └── Commands/                 (Folder for the Shell's own internal commands)
+│       ├── ShellState.cs
+│       ├── EnterModuleCommand.cs
+│       └── ...
 │
 └── 📁 CLI.Module.Notes/
-    ├── NotesModule.cs          (Example module implementation)
-    └── Commands/               (Subfolder for Spectre command classes)
+    ├── NotesModule.cs            (Example module inheriting from BaseModule)
+    └── Commands/                 (Subfolder for Spectre async command classes)
+        ├── AddNoteCommand.cs
+        └── ...
 
 
 CLI.Core: A Class Library. This is the shared core. Both the Shell and all Modules reference this project.
 
 CLI.Shell: The main Console App. This is the executable REPL and module host.
 
-CLI.Module.Notes: A Class Library. This is an example module that demonstrates data persistence and command parsing.
+CLI.Module.Notes: A Class Library. This is an example module that demonstrates persistence and command parsing by inheriting from BaseModule.
 
 Getting Started
 
@@ -75,7 +90,7 @@ dotnet restore
 2. Build the Solution
 
 [!WARNING]
-This step is critical. Building the solution will not only compile the code but also run the Post-Build Events that copy the module .dll files into the correct modules folder for the shell to find.
+This step is critical. Building the solution will not only compile the code but also run the Post-Build target that copies the module .dll files into the correct modules folder for the shell to find.
 
 dotnet build
 
@@ -87,7 +102,7 @@ You only run the CLI.Shell project.
 dotnet run --project CLI.Shell/CLI.Shell.csproj
 
 
-If everything is set up correctly, you will see a "Loaded module: Notes" message, and you'll be at the main > prompt.
+If everything is set up correctly, you will see a "Successfully loaded 1 module(s)." message, and you'll be at the main > prompt.
 
 How to Create a New Module
 
@@ -106,7 +121,7 @@ dotnet sln add CLI.Module.MyNewModule/CLI.Module.MyNewModule.csproj
 
 Step 2: Add Required References
 
-Your new module must reference CLI.Core (to get the interface and helpers) and Spectre.Console.Cli (to define commands).
+Your new module must reference CLI.Core (to get BaseModule and services) and Spectre.Console.Cli (to define commands).
 
 # 1. Add the Core project reference
 dotnet add CLI.Module.MyNewModule/CLI.Module.MyNewModule.csproj reference CLI.Core/CLI.Core.csproj
@@ -115,85 +130,56 @@ dotnet add CLI.Module.MyNewModule/CLI.Module.MyNewModule.csproj reference CLI.Co
 dotnet add CLI.Module.MyNewModule/CLI.Module.MyNewModule.csproj package Spectre.Console.Cli
 
 
-Step 3: Implement the ICommandModule Interface
+Step 3: Inherit from BaseModule
 
-Rename Class1.cs in your new project to MyNewModule.cs and implement the interface.
+Instead of implementing ICommandModule by hand, just inherit from BaseModule.
 
-Here is a simple template to get you started. It demonstrates:
+Rename Class1.cs in your new project to MyNewModule.cs and use this template. It demonstrates inheriting from BaseModule and using all the shared services.
 
-Using the shared SpectreTypeRegistrar from CLI.Core.
-
-Using the shared JsonDataService from CLI.Core.
-
-using CLI.Core; // <-- Imports ICommandModule, JsonDataService, SpectreTypeRegistrar
+using CLI.Core; // <-- Imports BaseModule, JsonDataService, etc.
 using Spectre.Console.Cli;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace CLI.Module.MyNewModule
 {
-    public class MyNewModule : ICommandModule
+    // 1. Inherit from BaseModule
+    public class MyNewModule : BaseModule
     {
-        public string Name => "MyModule";
-        public string Description => "A description of what my module does.";
+        public override string Name => "MyModule";
+        public override string Description => "A description of what my module does.";
 
-        private readonly ICommandApp _app;
-        private readonly JsonDataService _dataService;
-        
-        // This module's own data, loaded from a file
         private MyModuleSettings _settings;
         private const string _settingsFile = "mymodule.json";
 
-        public MyNewModule()
+        public MyNewModule() : base() { } // Base constructor handles setup
+
+        // 2. Load and register your module's services
+        protected override void ConfigureServices(IServiceCollection services)
         {
-            // 1. Set up data persistence
-            _dataService = new JsonDataService();
-            _settings = _dataService.LoadData<MyModuleSettings>(_settingsFile) ?? new MyModuleSettings();
-
-            // 2. Set up Dependency Injection
-            var services = new ServiceCollection();
-            services.AddSingleton(_settings); // Inject our settings object
-
-            // 3. Create the command app using the shared registrar
-            _app = new CommandApp(new SpectreTypeRegistrar(services));
+            // The 'DataService' is inherited from BaseModule
+            _settings = DataService.LoadDataAsync<MyModuleSettings>(_settingsFile).GetAwaiter().GetResult()
+                        ?? new MyModuleSettings();
             
-            // 4. Configure your commands
-            _app.Configure(config =>
-            {
-                config.AddCommand<MyCommand>("my-command")
-                      .WithDescription("Does a cool thing.");
-                
-                // Add more commands here
-            });
+            services.AddSingleton(_settings); // Inject our settings object
         }
 
-        public void ShowHelp()
+        // 3. Configure your module's commands
+        protected override void ConfigureCommands(IConfigurator config)
         {
-            _app.Run(new[] { "--help" });
+            config.AddCommand<MyCommand>("my-command")
+                  .WithDescription("Does a cool thing.");
+            
+            // Add more commands here
         }
 
-        public void ProcessCommand(string input)
+        // 4. (Optional) Hook into successful commands to save data
+        protected override async Task OnCommandExecutedAsync(string commandName, string[] args)
         {
-            var args = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            try
+            if (commandName == "my-command")
             {
-                int result = _app.Run(args);
-                
-                // If a state-changing command succeeded, save the data
-                if (result == 0 && args.Length > 0 && args[0] == "my-command")
-                {
-                    _dataService.SaveData(_settingsFile, _settings);
-                }
-            }
-            catch (Exception ex)
-            {
-                // Spectre automatically prints nice errors
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"Error: {ex.Message}");
-                Console.ResetColor();
+                await DataService.SaveDataAsync(_settingsFile, _settings);
             }
         }
     }
@@ -206,8 +192,8 @@ namespace CLI.Module.MyNewModule
         public int ExampleSetting { get; set; } = 0;
     }
 
-    // Example command
-    public class MyCommand : Command
+    // Example command (must be AsyncCommand)
+    public class MyCommand : AsyncCommand
     {
         private readonly MyModuleSettings _settings;
         public MyCommand(MyModuleSettings settings)
@@ -215,11 +201,11 @@ namespace CLI.Module.MyNewModule
             _settings = settings; // Get settings via DI
         }
 
-        public override int Execute(CommandContext context, CancellationToken cancellationToken)
+        public override Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken)
         {
             _settings.ExampleSetting++;
             Console.WriteLine($"Command executed! Setting is now: {_settings.ExampleSetting}");
-            return 0;
+            return Task.FromResult(0);
         }
     }
 }
@@ -227,18 +213,28 @@ namespace CLI.Module.MyNewModule
 
 Step 4: Set up the Post-Build Event
 
-This is the "magic" step. You must edit your new .csproj file (CLI.Module.MyNewModule.csproj) to automatically copy the compiled .dll to the Shell's modules folder.
+This is the "magic" step. Edit your new .csproj file (CLI.Module.MyNewModule.csproj) to automatically copy the compiled .dll to the Shell's modules folder.
 
-Open the .csproj file and add this Target block at the bottom, right before the closing </Project> tag:
+Open the .csproj file and add this robust Target block at the bottom, right before the closing </Project> tag:
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="mkdir &quot;$(SolutionDir)CLI.Shell\bin\$(Configuration)\$(TargetFramework)\modules&quot; 2&gt;nul || (exit 0)&#xD;&#xA;copy &quot;$(TargetDir)$(ProjectName).dll&quot; &quot;$(SolutionDir)CLI.Shell\bin\$(Configuration)\$(TargetFramework)\modules\$(ProjectName).dll&quot;" />
+  <!-- This is the robust, platform-agnostic way to copy the DLL -->
+  <Target Name="CopyPluginToShell" AfterTargets="Build">
+    <PropertyGroup>
+      <!-- Define the destination folder -->
+      <ShellModulesDir>$(SolutionDir)CLI.Shell\bin\$(Configuration)\$(TargetFramework)\modules\</ShellModulesDir>
+    </PropertyGroup>
+
+    <!-- Create the 'modules' directory if it doesn't exist -->
+    <MakeDir Directories="$(ShellModulesDir)" Condition="!Exists('$(ShellModulesDir)')" />
+
+    <!-- Copy the DLL -->
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ShellModulesDir)" />
   </Target>
 
 
 Step 5: Build & Run
 
-That's it! Now, just build the solution. The Post-Build script will run automatically.
+That's it! Now, just build the solution. The Post-Build target will run automatically.
 
 dotnet build
 
@@ -250,9 +246,8 @@ dotnet run --project CLI.Shell/CLI.Shell.csproj
 
 Output:
 
-Loaded module: Notes
-Loaded module: MyModule  <-- Success!
-Welcome to CLI. Type 'help' for commands.
+[bold blue]Welcome to CLI.[/] Type 'help' for commands.
+[green]Successfully loaded 2 module(s).[/]  <-- Success!
 >
 
 
@@ -260,12 +255,10 @@ Module Design Rules
 
 Modules are Self-Contained: A module should manage its own state and persistence. It should never try to directly access another module.
 
-Use Core Services:
+Inherit from BaseModule: All modules must inherit from BaseModule in CLI.Core.
 
-All modules must use Spectre.Console.Cli for internal command parsing.
+Use Core Services: All modules should use the inherited DataService and ConfigService for I/O.
 
-All modules must use the SpectreTypeRegistrar from CLI.Core for DI.
-
-All modules should use the JsonDataService from CLI.Core for data persistence.
+Design for async: All commands must inherit from AsyncCommand or AsyncCommand<T> and be non-blocking.
 
 Do Not Handle exit: The main CLI.Shell is responsible for handling the exit and module_exit commands. Your module's ShowHelp() text should not include these commands.

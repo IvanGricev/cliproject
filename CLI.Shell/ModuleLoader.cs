@@ -33,7 +33,8 @@ namespace CLI.Shell
             {
                 try
                 {
-                    var assembly = Assembly.LoadFrom(file);
+                    byte[] assemblyBytes = File.ReadAllBytes(file);
+                    var assembly = Assembly.Load(assemblyBytes);
                     
                     var moduleTypes = assembly.GetTypes()
                         .Where(t => typeof(ICommandModule).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
@@ -57,4 +58,3 @@ namespace CLI.Shell
         }
     }
 }
-
